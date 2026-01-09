@@ -366,6 +366,10 @@ namespace uuids
              class Allocator = std::allocator<CharT>>
    std::basic_string<CharT, Traits, Allocator> to_string(uuid const &id);
 
+   template <class CharT = char,
+             class Traits = std::char_traits<CharT>>
+   std::basic_string<CharT, Traits, std::pmr::polymorphic_allocator<CharT>> to_string(uuid const& id, std::pmr::memory_resource& resource);
+
    // --------------------------------------------------------------------------------------------------------------------------
    // uuid class
    // --------------------------------------------------------------------------------------------------------------------------
@@ -542,6 +546,9 @@ namespace uuids
       template<class CharT, class Traits, class Allocator>
       friend std::basic_string<CharT, Traits, Allocator> to_string(uuid const& id);
 
+      template<class CharT, class Traits>
+      friend std::basic_string<CharT, Traits, std::pmr::polymorphic_allocator<CharT>> to_string(uuid const& id, std::pmr::memory_resource& mem);
+
       friend std::hash<uuid>;
    };
 
@@ -583,6 +590,26 @@ namespace uuids
       }
 
       return uustr;
+   }
+
+   template <class CharT,
+             class Traits>
+   inline std::basic_string<CharT, Traits, std::pmr::polymorphic_allocator<CharT>> to_string(uuid const& id, std::pmr::memory_resource& resource)
+   {
+       std::basic_string<CharT, Traits, std::pmr::polymorphic_allocator<CharT>> uustr{ detail::empty_guid<CharT>, &resource };
+
+       for (size_t i = 0, index = 0; i < 36; ++i)
+       {
+           if (i == 8 || i == 13 || i == 18 || i == 23)
+           {
+               continue;
+           }
+           uustr[i] = detail::guid_encoder<CharT>[id.data[index] >> 4 & 0x0f];
+           uustr[++i] = detail::guid_encoder<CharT>[id.data[index] & 0x0f];
+           index++;
+       }
+
+       return uustr;
    }
 
    template <class Elem, class Traits>
